@@ -1,0 +1,143 @@
+---
+interface Props {
+  invitationId: string;
+}
+const { invitationId } = Astro.props;
+---
+
+<div class="rsvp-wrapper" id="rsvp-form-wrapper" data-invitation-id={invitationId}>
+  <div class="rsvp-buttons">
+    <button type="button" class="btn-accept" data-response="accepted">
+      Принимаю
+    </button>
+    <button type="button" class="btn-decline" data-response="declined">
+      Отказываюсь
+    </button>
+  </div>
+</div>
+
+<div class="rsvp-thanks" id="rsvp-thanks" aria-hidden="true">
+  <p class="thanks-text" id="rsvp-thanks-text"></p>
+</div>
+
+<div class="rsvp-error" id="rsvp-error" aria-hidden="true">
+  <p class="error-text">Что-то пошло не так. Попробуй ещё раз.</p>
+</div>
+
+<style>
+  .rsvp-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+
+  .btn-accept,
+  .btn-decline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: transform var(--duration-fast) var(--ease-soft),
+                box-shadow var(--duration-fast) var(--ease-soft);
+  }
+
+  .btn-accept {
+    background: var(--color-rose);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(224, 102, 138, 0.35);
+  }
+
+  .btn-decline {
+    background: transparent;
+    border: 1px solid var(--color-plum);
+    color: var(--color-plum);
+  }
+
+  @media (hover: hover) {
+    .btn-accept:hover,
+    .btn-decline:hover {
+      transform: scale(1.02);
+      box-shadow: var(--glass-shadow);
+    }
+  }
+
+  .rsvp-thanks {
+    display: none;
+    text-align: center;
+    margin-top: var(--space-6);
+  }
+
+  .thanks-text {
+    font-family: var(--font-hand);
+    font-size: var(--text-xl);
+    color: var(--color-plum);
+  }
+
+  .rsvp-error {
+    display: none;
+    text-align: center;
+    margin-top: var(--space-4);
+  }
+
+  .error-text {
+    font-size: var(--text-sm);
+    color: var(--color-rose);
+  }
+</style>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const wrapper = document.getElementById('rsvp-form-wrapper') as HTMLElement | null;
+  const thanks = document.getElementById('rsvp-thanks');
+  const thanksText = document.getElementById('rsvp-thanks-text');
+  const errorEl = document.getElementById('rsvp-error');
+
+  if (wrapper) {
+    const invitationId = wrapper.dataset.invitationId ?? '';
+    const supabase = createClient(
+      import.meta.env.PUBLIC_SUPABASE_URL,
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    wrapper.querySelectorAll<HTMLButtonElement>('[data-response]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const response = btn.dataset.response as 'accepted' | 'declined';
+        btn.disabled = true;
+
+        try {
+          const { error } = await supabase.from('invitation_responses').insert({
+            invitation_id: invitationId,
+            response,
+          });
+
+          if (error) throw error;
+
+          wrapper.style.display = 'none';
+          if (thanks && thanksText) {
+            thanksText.textContent = response === 'accepted'
+              ? 'Ура. Жду тебя. ♡'
+              : 'Жаль. Но окей.';
+            thanks.style.display = 'block';
+            thanks.removeAttribute('aria-hidden');
+          }
+        } catch {
+          btn.disabled = false;
+          if (errorEl) {
+            errorEl.style.display = 'block';
+            errorEl.removeAttribute('aria-hidden');
+          }
+        }
+      });
+    });
+  }
+</script>

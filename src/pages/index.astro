@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+---
+
+<BaseLayout title="Наш маленький мир">
+  <main class="hero">
+    <div class="hero-inner">
+      <h1 class="hero-title">Наш маленький мир</h1>
+      <p class="hero-sub">Места, которые мы открывали вместе.</p>
+      <nav class="hero-nav">
+        <a href={`${import.meta.env.BASE_URL}history`} class="btn-primary">Наши свидания</a>
+        <a href={`${import.meta.env.BASE_URL}invitation`} class="btn-ghost">Приглашение</a>
+      </nav>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .hero {
+    min-height: 100svh;
+    background: var(--gradient-hero);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .hero-inner {
+    text-align: center;
+    max-width: 480px;
+    animation: fadeUp var(--duration-slow) var(--ease-soft) both;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    font-weight: 400;
+    color: var(--color-ink);
+    line-height: 1.1;
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-sub {
+    font-family: var(--font-hand);
+    font-size: var(--text-lg);
+    color: var(--color-plum);
+    margin-bottom: var(--space-8);
+  }
+
+  .hero-nav {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-8);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    min-height: 44px;
+    transition: transform var(--duration-fast) var(--ease-soft),
+                box-shadow var(--duration-fast) var(--ease-soft);
+  }
+
+  .btn-primary {
+    background: var(--color-rose);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(224, 102, 138, 0.35);
+  }
+
+  .btn-ghost {
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    color: var(--color-plum);
+  }
+
+  @media (hover: hover) {
+    .btn-primary:hover,
+    .btn-ghost:hover {
+      transform: scale(1.02);
+      box-shadow: var(--glass-shadow);
+    }
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

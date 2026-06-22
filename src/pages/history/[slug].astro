@@ -1,0 +1,225 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../components/BaseLayout.astro';
+import GlassCard from '../../components/GlassCard.astro';
+import { Image } from 'astro:assets';
+
+export async function getStaticPaths() {
+  const dates = await getCollection('dates');
+  return dates.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const base = import.meta.env.BASE_URL;
+
+const dateLabel = new Intl.DateTimeFormat('ru-RU', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+}).format(entry.data.date);
+---
+
+<BaseLayout title={entry.data.title}>
+  <main class="page">
+    <div class="page-inner">
+      <a href={`${base}history`} class="back-link">← Все свидания</a>
+
+      {entry.data.heroPhoto && (
+        <div class="hero-photo-wrap">
+          <Image
+            src={entry.data.heroPhoto}
+            alt={entry.data.title}
+            width={800}
+            height={450}
+            class="hero-photo"
+          />
+        </div>
+      )}
+
+      <GlassCard class="meta-card">
+        <h1 class="date-title">{entry.data.title}</h1>
+        <time class="date-when">{dateLabel}</time>
+        {entry.data.location && (
+          <p class="date-location">{entry.data.location}</p>
+        )}
+        {entry.data.mood && entry.data.mood.length > 0 && (
+          <div class="mood-tags">
+            {entry.data.mood.map((tag) => (
+              <span class="mood-tag">{tag}</span>
+            ))}
+          </div>
+        )}
+      </GlassCard>
+
+      {/* Prose body from markdown */}
+      <article class="prose">
+        <Content />
+      </article>
+
+      {entry.data.photos && entry.data.photos.length > 0 && (
+        <section class="gallery">
+          {entry.data.photos.map((photo) => (
+            <figure class="gallery-item">
+              <Image
+                src={photo.src}
+                alt={photo.caption ?? entry.data.title}
+                width={400}
+                height={300}
+                class="gallery-photo"
+              />
+              {photo.caption && (
+                <figcaption class="gallery-caption">{photo.caption}</figcaption>
+              )}
+            </figure>
+          ))}
+        </section>
+      )}
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100svh;
+    background: var(--gradient-twilight);
+    padding: var(--space-8) var(--space-6) var(--space-16);
+  }
+
+  .page-inner {
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    animation: fadeUp var(--duration-slow) var(--ease-soft) both;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-sm);
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-soft);
+  }
+
+  .back-link:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .hero-photo-wrap {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .hero-photo {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .meta-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .date-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+    color: var(--color-ink);
+    line-height: 1.15;
+  }
+
+  .date-when {
+    font-size: var(--text-sm);
+    color: var(--color-plum);
+    font-weight: 500;
+  }
+
+  .date-location {
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+    opacity: 0.75;
+  }
+
+  .mood-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .mood-tag {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-rose-soft);
+    color: var(--color-plum);
+    font-weight: 500;
+  }
+
+  .prose {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glass-shadow);
+    padding: var(--space-8);
+    color: var(--color-ink);
+    font-size: var(--text-base);
+    line-height: 1.75;
+    max-width: 65ch;
+  }
+
+  .prose :global(p + p) {
+    margin-top: var(--space-4);
+  }
+
+  .prose :global(em) {
+    font-style: italic;
+  }
+
+  .prose :global(strong) {
+    font-weight: 600;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .gallery-item {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--glass-bg);
+  }
+
+  .gallery-photo {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .gallery-caption {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--color-ink);
+    opacity: 0.7;
+    font-family: var(--font-hand);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>

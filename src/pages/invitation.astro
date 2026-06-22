@@ -1,0 +1,357 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+import GlassCard from '../components/GlassCard.astro';
+import RsvpForm from '../components/RsvpForm.astro';
+import { Image } from 'astro:assets';
+import invitation from '../content/invitation.json';
+
+const isEmpty = invitation.status === 'placeholder';
+const isOpen = invitation.status === 'open';
+const isAccepted = invitation.status === 'accepted';
+
+const dateLabel = isEmpty
+  ? ''
+  : new Intl.DateTimeFormat('ru-RU', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Moscow',
+    }).format(new Date(invitation.proposedAt));
+---
+
+<BaseLayout title={isEmpty ? 'Приглашение' : invitation.title}>
+  <main class="page">
+
+    <!-- Decorative sea scene, purely visual -->
+    <div class="bg-scene" aria-hidden="true">
+      <svg
+        class="bg-svg"
+        viewBox="0 0 800 600"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <!-- Sun glow + disc + rays -->
+        <circle cx="660" cy="80" r="80" fill="rgba(255,220,60,0.18)" />
+        <g class="sun-group">
+          <circle class="sun-circle" cx="660" cy="80" r="44" fill="rgba(255,235,120,0.72)" />
+          <!-- Rays -->
+          <line x1="660" y1="22"  x2="660" y2="10"  stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="660" y1="138" x2="660" y2="150" stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="602" y1="80"  x2="590" y2="80"  stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="718" y1="80"  x2="730" y2="80"  stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="619" y1="39"  x2="611" y2="31"  stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="701" y1="39"  x2="709" y2="31"  stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="619" y1="121" x2="611" y2="129" stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+          <line x1="701" y1="121" x2="709" y2="129" stroke="rgba(255,220,60,0.55)" stroke-width="3" stroke-linecap="round" />
+        </g>
+
+        <!-- Water glitter trail from sun -->
+        <path
+          d="M490 340 Q560 328 630 342 Q700 356 770 342 L800 340 L800 372 L490 372 Z"
+          fill="rgba(255,240,130,0.16)"
+        />
+
+        <!-- Wave 3 (back, deepest) -->
+        <path
+          class="wave-3"
+          d="M-80 476 Q60 452 200 472 Q340 492 480 464 Q620 436 760 460 Q830 472 880 464 L880 600 L-80 600 Z"
+          fill="rgba(255,255,255,0.09)"
+        />
+        <!-- Wave 2 (mid) -->
+        <path
+          class="wave-2"
+          d="M-80 508 Q80 484 220 508 Q360 532 500 504 Q640 476 780 504 Q840 518 880 508 L880 600 L-80 600 Z"
+          fill="rgba(255,255,255,0.14)"
+        />
+        <!-- Wave 1 (front) -->
+        <path
+          class="wave-1"
+          d="M-80 538 Q100 516 240 540 Q380 564 520 536 Q660 508 800 538 L880 548 L880 600 L-80 600 Z"
+          fill="rgba(255,255,255,0.22)"
+        />
+
+        <!-- SUP board 1 -->
+        <g class="sup-1">
+          <ellipse cx="148" cy="492" rx="58" ry="9" fill="rgba(255,255,255,0.28)" />
+          <!-- person -->
+          <circle cx="154" cy="476" r="5" fill="rgba(255,255,255,0.22)" />
+          <!-- paddle -->
+          <line x1="148" y1="483" x2="148" y2="448" stroke="rgba(255,255,255,0.26)" stroke-width="2.5" stroke-linecap="round" />
+          <ellipse cx="148" cy="444" rx="6" ry="10" fill="rgba(255,255,255,0.20)" transform="rotate(15,148,444)" />
+        </g>
+
+        <!-- SUP board 2 -->
+        <g class="sup-2">
+          <ellipse cx="608" cy="508" rx="54" ry="8.5" fill="rgba(255,255,255,0.26)" />
+          <!-- person -->
+          <circle cx="600" cy="492" r="5" fill="rgba(255,255,255,0.20)" />
+          <!-- paddle -->
+          <line x1="608" y1="500" x2="608" y2="466" stroke="rgba(255,255,255,0.24)" stroke-width="2.5" stroke-linecap="round" />
+          <ellipse cx="608" cy="462" rx="6" ry="10" fill="rgba(255,255,255,0.18)" transform="rotate(-12,608,462)" />
+        </g>
+      </svg>
+    </div>
+
+    {isEmpty ? (
+      <div class="card-wrap">
+        <GlassCard>
+          <p class="soon-text">Приглашение появится совсем скоро.</p>
+        </GlassCard>
+      </div>
+    ) : (
+      <div class="card-wrap">
+        <article class="invite-card">
+          {invitation.heroPhoto && (
+            <div class="hero-photo-wrap">
+              <Image
+                src={invitation.heroPhoto}
+                alt={invitation.title}
+                width={800}
+                height={500}
+                class="hero-photo"
+              />
+            </div>
+          )}
+
+          <GlassCard>
+            <h1 class="invite-title anim-item" style="--d:400ms">{invitation.title}</h1>
+
+            {invitation.teaser && (
+              <p class="invite-teaser anim-item" style="--d:560ms">{invitation.teaser}</p>
+            )}
+
+            <div class="invite-meta anim-item" style="--d:720ms">
+              <time class="meta-row" datetime={invitation.proposedAt}>
+                <span class="meta-label">Когда</span>
+                <span class="meta-value">{dateLabel}</span>
+              </time>
+
+              {(invitation.location.name || invitation.location.hint) && (
+                <div class="meta-row">
+                  <span class="meta-label">Где</span>
+                  <span class="meta-value">{invitation.location.name || invitation.location.hint}</span>
+                </div>
+              )}
+
+              {invitation.dressCode && (
+                <div class="meta-row">
+                  <span class="meta-label">Наряд</span>
+                  <span class="meta-value">{invitation.dressCode}</span>
+                </div>
+              )}
+            </div>
+
+            {isOpen && (
+              <div class="anim-item" style="--d:900ms">
+                <RsvpForm invitationId={invitation.id} />
+              </div>
+            )}
+
+            {isAccepted && (
+              <p class="status-message accepted anim-item" style="--d:720ms">Жду тебя. ♡</p>
+            )}
+
+            {invitation.status === 'declined' && (
+              <p class="status-message declined anim-item" style="--d:720ms">Хорошо. Буду думать о следующем разе.</p>
+            )}
+          </GlassCard>
+        </article>
+      </div>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  /* ── Page background: sea + sky ── */
+  .page {
+    min-height: 100svh;
+    background:
+      radial-gradient(ellipse 55% 45% at 78% 12%, rgba(255, 220, 80, 0.35) 0%, transparent 55%),
+      linear-gradient(180deg, #c9e8f5 0%, #5ab4d4 35%, #1a7fa8 65%, #0d5c7a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-6);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── SVG scene layer ── */
+  .bg-scene {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .sun-circle {
+    transform-origin: 660px 80px;
+    animation: sunPulse 4s ease-in-out infinite alternate;
+  }
+
+  .wave-1 { animation: waveDrift  9s ease-in-out 1.0s infinite alternate; }
+  .wave-2 { animation: waveDrift 13s ease-in-out 2.0s infinite alternate-reverse; }
+  .wave-3 { animation: waveDrift  7s ease-in-out 0.0s infinite alternate; }
+
+  .sup-1 { animation: supFloat 6s ease-in-out 0.0s infinite alternate; }
+  .sup-2 { animation: supFloat 8s ease-in-out 1.5s infinite alternate-reverse; }
+
+  @keyframes sunPulse {
+    from { transform: scale(1);    opacity: 0.85; }
+    to   { transform: scale(1.08); opacity: 1; }
+  }
+
+  @keyframes waveDrift {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-28px); }
+  }
+
+  @keyframes supFloat {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-9px); }
+  }
+
+  /* ── Card ── */
+  .card-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+    animation:
+      cardEntrance 700ms var(--ease-soft) both,
+      float 5s ease-in-out 700ms infinite;
+  }
+
+  @keyframes cardEntrance {
+    0%   { opacity: 0; transform: translateY(48px) scale(0.95); }
+    60%  { opacity: 1; transform: translateY(-8px) scale(1.015); }
+    80%  { transform: translateY(4px) scale(0.997); }
+    100% { transform: translateY(0) scale(1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-7px); }
+  }
+
+  /* ── Staggered elements ── */
+  .anim-item {
+    animation: fadeUp 500ms var(--ease-soft) var(--d, 0ms) both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Placeholder ── */
+  .soon-text {
+    font-family: var(--font-hand);
+    font-size: var(--text-lg);
+    color: var(--color-plum);
+    text-align: center;
+  }
+
+  /* ── Invite card content ── */
+  .invite-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .hero-photo-wrap {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow: hidden;
+    margin-bottom: -1px;
+  }
+
+  .hero-photo {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .invite-title {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--color-ink);
+    line-height: 1.1;
+    margin-bottom: var(--space-3);
+  }
+
+  .invite-teaser {
+    font-family: var(--font-hand);
+    font-size: 1.5rem;
+    color: var(--color-plum);
+    margin-bottom: var(--space-6);
+  }
+
+  .invite-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    border-top: 1px solid var(--glass-border);
+    padding-top: var(--space-4);
+  }
+
+  .meta-row {
+    display: flex;
+    gap: var(--space-4);
+    align-items: baseline;
+  }
+
+  .meta-label {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-plum);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    flex-shrink: 0;
+    min-width: 3.5rem;
+  }
+
+  .meta-value {
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+    line-height: 1.4;
+  }
+
+  .status-message {
+    text-align: center;
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .status-message.accepted {
+    font-family: var(--font-hand);
+    font-size: var(--text-xl);
+    color: var(--color-rose);
+  }
+
+  .status-message.declined {
+    font-family: var(--font-hand);
+    font-size: var(--text-lg);
+    color: var(--color-plum);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-wrap,
+    .anim-item,
+    .sun-circle,
+    .wave-1, .wave-2, .wave-3,
+    .sup-1, .sup-2 {
+      animation: none !important;
+      opacity: 1 !important;
+    }
+  }
+</style>

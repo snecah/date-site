@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../components/BaseLayout.astro';
+import GlassCard from '../components/GlassCard.astro';
+---
+
+<BaseLayout title="Статус ответа">
+  <main class="page">
+    <div class="page-inner">
+      <GlassCard>
+        <h1 class="page-title">Ответ</h1>
+        <div id="status-content">
+          <p class="loading">Загружаю...</p>
+        </div>
+      </GlassCard>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .page {
+    min-height: 100svh;
+    background: var(--gradient-twilight);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .page-inner {
+    width: 100%;
+    max-width: 480px;
+    animation: fadeUp var(--duration-slow) var(--ease-soft) both;
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+    color: var(--color-ink);
+    margin-bottom: var(--space-6);
+  }
+
+  .loading {
+    color: var(--color-ink);
+    opacity: 0.5;
+    font-size: var(--text-sm);
+  }
+
+  #status-content :global(.status-waiting) {
+    font-family: var(--font-hand);
+    font-size: var(--text-xl);
+    color: var(--color-plum);
+  }
+
+  #status-content :global(.status-answer) {
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    font-weight: 400;
+    line-height: 1.1;
+  }
+
+  #status-content :global(.status-answer.accepted) {
+    color: var(--color-rose);
+  }
+
+  #status-content :global(.status-answer.declined) {
+    color: var(--color-plum);
+    opacity: 0.7;
+  }
+
+  #status-content :global(.status-time) {
+    font-size: var(--text-xs);
+    color: var(--color-ink);
+    opacity: 0.5;
+    margin-top: var(--space-2);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  const contentEl = document.getElementById('status-content');
+
+  async function renderStatus() {
+    if (!contentEl) return;
+
+    const { data, error } = await supabase
+      .from('invitation_responses')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      contentEl.innerHTML = '<p class="loading">Ошибка загрузки. Проверь ключи Supabase.</p>';
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      contentEl.innerHTML = '<p class="status-waiting">Пока тишина. Жди. ♡</p>';
+      return;
+    }
+
+    const latest = data[0];
+    const isAccepted = latest.response === 'accepted';
+    const when = new Date(latest.created_at).toLocaleString('ru-RU', {
+      timeZone: 'Europe/Moscow',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    contentEl.innerHTML = `
+      <p class="status-answer ${isAccepted ? 'accepted' : 'declined'}">
+        ${isAccepted ? '♡ Принято' : 'Отказалась'}
+      </p>
+      <p class="status-time">${when}</p>
+    `;
+  }
+
+  renderStatus();
+
+  supabase
+    .channel('invitation_responses_changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'invitation_responses' }, () => {
+      renderStatus();
+    })
+    .subscribe();
+</script>
