@@ -8,10 +8,10 @@ const { invitationId } = Astro.props;
 <div class="rsvp-wrapper" id="rsvp-form-wrapper" data-invitation-id={invitationId}>
 
   <div class="rsvp-buttons" id="rsvp-buttons" style="display: none">
-    <button type="button" class="btn-accept" data-response="accepted">
+    <button type="button" id="btn-accept-rsvp" class="btn-accept">
       Да, иду!
     </button>
-    <button type="button" class="btn-decline" data-response="declined">
+    <button type="button" id="btn-decline-rsvp" class="btn-decline">
       В другой раз
     </button>
   </div>
@@ -268,12 +268,10 @@ const { invitationId } = Astro.props;
     });
 
     // Accept → show optional comment step
-    const acceptBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="accepted"]');
-    acceptBtn?.addEventListener('click', () => showCommentStep('accepted'));
+    document.getElementById('btn-accept-rsvp')?.addEventListener('click', () => showCommentStep('accepted'));
 
     // Decline → show mandatory comment step
-    const declineBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="declined"]');
-    declineBtn?.addEventListener('click', () => showCommentStep('declined'));
+    document.getElementById('btn-decline-rsvp')?.addEventListener('click', () => showCommentStep('declined'));
 
     // Send comment → insert with message
     btnSend?.addEventListener('click', async () => {
