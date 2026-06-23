@@ -6,7 +6,9 @@ const { invitationId } = Astro.props;
 ---
 
 <div class="rsvp-wrapper" id="rsvp-form-wrapper" data-invitation-id={invitationId}>
-  <div class="rsvp-buttons">
+
+  <!-- hidden until Supabase check resolves -->
+  <div class="rsvp-buttons" id="rsvp-buttons" style="display: none">
     <button type="button" class="btn-accept" data-response="accepted">
       Принимаю
     </button>
@@ -14,22 +16,26 @@ const { invitationId } = Astro.props;
       Отказываюсь
     </button>
   </div>
-</div>
 
-<div class="rsvp-thanks" id="rsvp-thanks" aria-hidden="true">
-  <p class="thanks-text" id="rsvp-thanks-text"></p>
-</div>
+  <div class="rsvp-thanks" id="rsvp-thanks" style="display: none" aria-hidden="true">
+    <p class="thanks-text" id="rsvp-thanks-text"></p>
+  </div>
 
-<div class="rsvp-error" id="rsvp-error" aria-hidden="true">
-  <p class="error-text">Что-то пошло не так. Попробуй ещё раз.</p>
+  <div class="rsvp-error" id="rsvp-error" style="display: none" aria-hidden="true">
+    <p class="error-text">Что-то пошло не так. Попробуй ещё раз.</p>
+  </div>
+
 </div>
 
 <style>
+  .rsvp-wrapper {
+    margin-top: var(--space-6);
+  }
+
   .rsvp-buttons {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    margin-top: var(--space-6);
   }
 
   .btn-accept,
@@ -47,7 +53,8 @@ const { invitationId } = Astro.props;
     cursor: pointer;
     border: none;
     transition: transform var(--duration-fast) var(--ease-soft),
-                box-shadow var(--duration-fast) var(--ease-soft);
+                box-shadow var(--duration-fast) var(--ease-soft),
+                opacity var(--duration-fast) var(--ease-soft);
   }
 
   .btn-accept {
@@ -62,18 +69,24 @@ const { invitationId } = Astro.props;
     color: var(--color-plum);
   }
 
+  .btn-accept:disabled,
+  .btn-decline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   @media (hover: hover) {
-    .btn-accept:hover,
-    .btn-decline:hover {
+    .btn-accept:not(:disabled):hover,
+    .btn-decline:not(:disabled):hover {
       transform: scale(1.02);
       box-shadow: var(--glass-shadow);
     }
   }
 
   .rsvp-thanks {
-    display: none;
     text-align: center;
-    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--glass-border);
   }
 
   .thanks-text {
@@ -83,7 +96,6 @@ const { invitationId } = Astro.props;
   }
 
   .rsvp-error {
-    display: none;
     text-align: center;
     margin-top: var(--space-4);
   }
@@ -97,47 +109,70 @@ const { invitationId } = Astro.props;
 <script>
   import { createClient } from '@supabase/supabase-js';
 
-  const wrapper = document.getElementById('rsvp-form-wrapper') as HTMLElement | null;
-  const thanks = document.getElementById('rsvp-thanks');
-  const thanksText = document.getElementById('rsvp-thanks-text');
-  const errorEl = document.getElementById('rsvp-error');
+  (async () => {
+    const wrapper = document.getElementById('rsvp-form-wrapper') as HTMLElement | null;
+    if (!wrapper) return;
 
-  if (wrapper) {
     const invitationId = wrapper.dataset.invitationId ?? '';
+    const buttonsEl   = document.getElementById('rsvp-buttons')    as HTMLElement | null;
+    const thanks      = document.getElementById('rsvp-thanks')      as HTMLElement | null;
+    const thanksText  = document.getElementById('rsvp-thanks-text') as HTMLElement | null;
+    const errorEl     = document.getElementById('rsvp-error')       as HTMLElement | null;
+
     const supabase = createClient(
       import.meta.env.PUBLIC_SUPABASE_URL,
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     );
 
-    wrapper.querySelectorAll<HTMLButtonElement>('[data-response]').forEach((btn) => {
+    function showThanks(response: string) {
+      if (buttonsEl) buttonsEl.style.display = 'none';
+      if (thanks && thanksText) {
+        thanksText.textContent = response === 'accepted'
+          ? 'Ура. Жду тебя. ♡'
+          : 'Жаль. Но окей.';
+        thanks.style.display = 'block';
+        thanks.removeAttribute('aria-hidden');
+      }
+    }
+
+    // Check if she already responded to this invitation
+    const { data: existing } = await supabase
+      .from('invitation_responses')
+      .select('response')
+      .eq('invitation_id', invitationId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.response) {
+      showThanks(existing.response);
+      return;
+    }
+
+    // No existing response — show buttons and wire up handlers
+    if (buttonsEl) buttonsEl.style.display = 'flex';
+
+    buttonsEl?.querySelectorAll<HTMLButtonElement>('[data-response]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const response = btn.dataset.response as 'accepted' | 'declined';
-        btn.disabled = true;
+        buttonsEl.querySelectorAll<HTMLButtonElement>('button').forEach(b => b.disabled = true);
 
-        try {
-          const { error } = await supabase.from('invitation_responses').insert({
-            invitation_id: invitationId,
-            response,
-          });
+        const { error } = await supabase.from('invitation_responses').insert({
+          invitation_id: invitationId,
+          response,
+        });
 
-          if (error) throw error;
-
-          wrapper.style.display = 'none';
-          if (thanks && thanksText) {
-            thanksText.textContent = response === 'accepted'
-              ? 'Ура. Жду тебя. ♡'
-              : 'Жаль. Но окей.';
-            thanks.style.display = 'block';
-            thanks.removeAttribute('aria-hidden');
-          }
-        } catch {
-          btn.disabled = false;
+        if (error) {
+          buttonsEl.querySelectorAll<HTMLButtonElement>('button').forEach(b => b.disabled = false);
           if (errorEl) {
             errorEl.style.display = 'block';
             errorEl.removeAttribute('aria-hidden');
           }
+          return;
         }
+
+        showThanks(response);
       });
     });
-  }
+  })();
 </script>
