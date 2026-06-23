@@ -8,18 +8,24 @@ Deno.serve(async (req) => {
   const record = payload.record as {
     invitation_id: string;
     response: 'accepted' | 'declined';
+    message?: string | null;
     created_at: string;
   };
 
   const isAccepted = record.response === 'accepted';
-  const text = [
+
+  const lines = [
     `💌 *Новый ответ на приглашение*`,
     ``,
     isAccepted ? `✅ Согласилась\\!` : `❌ Отказала\\.`,
     `Приглашение: \`${record.invitation_id}\``,
-    ``,
-    `[Посмотреть статус](https://snecah.github.io/date-site/status)`,
-  ].join('\n');
+  ];
+
+  if (record.message) {
+    lines.push(``, `💬 _«${escapeMd(record.message)}»_`);
+  }
+
+  lines.push(``, `[Посмотреть статус](https://snecah.github.io/date-site/status)`);
 
   const resp = await fetch(
     `https://api.telegram.org/bot${Deno.env.get('TELEGRAM_TOKEN')}/sendMessage`,
@@ -28,7 +34,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: Deno.env.get('TELEGRAM_CHAT_ID'),
-        text,
+        text: lines.join('\n'),
         parse_mode: 'MarkdownV2',
       }),
     }
@@ -42,3 +48,7 @@ Deno.serve(async (req) => {
 
   return new Response('OK', { status: 200 });
 });
+
+function escapeMd(text: string): string {
+  return text.replace(/[_*[\]()~`>#+\-=|{}.!\\]/g, '\\$&');
+}

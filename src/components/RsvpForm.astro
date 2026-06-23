@@ -7,7 +7,6 @@ const { invitationId } = Astro.props;
 
 <div class="rsvp-wrapper" id="rsvp-form-wrapper" data-invitation-id={invitationId}>
 
-  <!-- hidden until Supabase check resolves -->
   <div class="rsvp-buttons" id="rsvp-buttons" style="display: none">
     <button type="button" class="btn-accept" data-response="accepted">
       Принимаю
@@ -17,8 +16,24 @@ const { invitationId } = Astro.props;
     </button>
   </div>
 
+  <div class="rsvp-comment" id="rsvp-comment" style="display: none">
+    <p class="comment-prompt">Хочешь что-нибудь написать? ♡</p>
+    <textarea
+      id="rsvp-message"
+      class="comment-textarea"
+      placeholder="Напиши что думаешь..."
+      rows="3"
+      maxlength="500"
+    ></textarea>
+    <div class="comment-actions">
+      <button type="button" id="btn-send-comment" class="btn-accept">Отправить</button>
+      <button type="button" id="btn-skip-comment" class="btn-decline">Пропустить</button>
+    </div>
+  </div>
+
   <div class="rsvp-thanks" id="rsvp-thanks" style="display: none" aria-hidden="true">
     <p class="thanks-text" id="rsvp-thanks-text"></p>
+    <p class="thanks-message" id="rsvp-thanks-message"></p>
   </div>
 
   <div class="rsvp-error" id="rsvp-error" style="display: none" aria-hidden="true">
@@ -32,7 +47,8 @@ const { invitationId } = Astro.props;
     margin-top: var(--space-6);
   }
 
-  .rsvp-buttons {
+  .rsvp-buttons,
+  .comment-actions {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
@@ -83,6 +99,45 @@ const { invitationId } = Astro.props;
     }
   }
 
+  /* ── Comment step ── */
+  .rsvp-comment {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .comment-prompt {
+    font-family: var(--font-hand);
+    font-size: var(--text-lg);
+    color: var(--color-plum);
+    margin-bottom: var(--space-3);
+    text-align: center;
+  }
+
+  .comment-textarea {
+    width: 100%;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    color: var(--color-ink);
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: var(--space-3);
+    transition: border-color var(--duration-fast) var(--ease-soft);
+  }
+
+  .comment-textarea:focus {
+    border-color: var(--color-rose-soft);
+  }
+
+  .comment-textarea::placeholder {
+    color: rgba(107, 48, 80, 0.45);
+  }
+
+  /* ── Thanks ── */
   .rsvp-thanks {
     text-align: center;
     padding-top: var(--space-4);
@@ -93,6 +148,15 @@ const { invitationId } = Astro.props;
     font-family: var(--font-hand);
     font-size: var(--text-xl);
     color: var(--color-plum);
+  }
+
+  .thanks-message {
+    font-family: var(--font-hand);
+    font-size: var(--text-base);
+    color: var(--color-plum);
+    opacity: 0.7;
+    margin-top: var(--space-2);
+    font-style: italic;
   }
 
   .rsvp-error {
@@ -110,69 +174,115 @@ const { invitationId } = Astro.props;
   import { createClient } from '@supabase/supabase-js';
 
   (async () => {
-    const wrapper = document.getElementById('rsvp-form-wrapper') as HTMLElement | null;
+    const wrapper    = document.getElementById('rsvp-form-wrapper') as HTMLElement | null;
     if (!wrapper) return;
 
-    const invitationId = wrapper.dataset.invitationId ?? '';
-    const buttonsEl   = document.getElementById('rsvp-buttons')    as HTMLElement | null;
-    const thanks      = document.getElementById('rsvp-thanks')      as HTMLElement | null;
-    const thanksText  = document.getElementById('rsvp-thanks-text') as HTMLElement | null;
-    const errorEl     = document.getElementById('rsvp-error')       as HTMLElement | null;
+    const invitationId  = wrapper.dataset.invitationId ?? '';
+    const buttonsEl     = document.getElementById('rsvp-buttons')       as HTMLElement | null;
+    const commentEl     = document.getElementById('rsvp-comment')       as HTMLElement | null;
+    const messageInput  = document.getElementById('rsvp-message')       as HTMLTextAreaElement | null;
+    const thanks        = document.getElementById('rsvp-thanks')        as HTMLElement | null;
+    const thanksText    = document.getElementById('rsvp-thanks-text')   as HTMLElement | null;
+    const thanksMsg     = document.getElementById('rsvp-thanks-message') as HTMLElement | null;
+    const errorEl       = document.getElementById('rsvp-error')         as HTMLElement | null;
+    const btnSend       = document.getElementById('btn-send-comment')   as HTMLButtonElement | null;
+    const btnSkip       = document.getElementById('btn-skip-comment')   as HTMLButtonElement | null;
 
     const supabase = createClient(
       import.meta.env.PUBLIC_SUPABASE_URL,
       import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     );
 
-    function showThanks(response: string) {
-      if (buttonsEl) buttonsEl.style.display = 'none';
+    function showThanks(response: string, message?: string | null) {
+      if (buttonsEl)  buttonsEl.style.display  = 'none';
+      if (commentEl)  commentEl.style.display  = 'none';
       if (thanks && thanksText) {
-        thanksText.textContent = response === 'accepted'
-          ? 'Ура. Жду тебя. ♡'
-          : 'Жаль. Но окей.';
+        thanksText.textContent = response === 'accepted' ? 'Ура. Жду тебя. ♡' : 'Жаль. Но окей.';
+        if (message && thanksMsg) {
+          thanksMsg.textContent = `«${message}»`;
+          thanksMsg.style.display = 'block';
+        }
         thanks.style.display = 'block';
         thanks.removeAttribute('aria-hidden');
       }
     }
 
-    // Check if she already responded to this invitation
+    async function submitResponse(response: 'accepted' | 'declined', message: string | null) {
+      const { error } = await supabase.from('invitation_responses').insert({
+        invitation_id: invitationId,
+        response,
+        ...(message ? { message } : {}),
+      });
+      if (error) throw error;
+    }
+
+    // Check for existing response on load
     const { data: existing } = await supabase
       .from('invitation_responses')
-      .select('response')
+      .select('response, message')
       .eq('invitation_id', invitationId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (existing?.response) {
-      showThanks(existing.response);
+      showThanks(existing.response, existing.message);
       return;
     }
 
-    // No existing response — show buttons and wire up handlers
+    // No existing response — show buttons
     if (buttonsEl) buttonsEl.style.display = 'flex';
 
-    buttonsEl?.querySelectorAll<HTMLButtonElement>('[data-response]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const response = btn.dataset.response as 'accepted' | 'declined';
-        buttonsEl.querySelectorAll<HTMLButtonElement>('button').forEach(b => b.disabled = true);
+    // Accept → show comment step
+    const acceptBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="accepted"]');
+    acceptBtn?.addEventListener('click', () => {
+      if (buttonsEl) buttonsEl.style.display = 'none';
+      if (commentEl) commentEl.style.display = 'block';
+      messageInput?.focus();
+    });
 
-        const { error } = await supabase.from('invitation_responses').insert({
-          invitation_id: invitationId,
-          response,
-        });
+    // Decline → immediate insert + thanks
+    const declineBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="declined"]');
+    declineBtn?.addEventListener('click', async () => {
+      declineBtn.disabled = true;
+      acceptBtn && (acceptBtn.disabled = true);
+      try {
+        await submitResponse('declined', null);
+        showThanks('declined');
+      } catch {
+        declineBtn.disabled = false;
+        acceptBtn && (acceptBtn.disabled = false);
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.removeAttribute('aria-hidden'); }
+      }
+    });
 
-        if (error) {
-          buttonsEl.querySelectorAll<HTMLButtonElement>('button').forEach(b => b.disabled = false);
-          if (errorEl) {
-            errorEl.style.display = 'block';
-            errorEl.removeAttribute('aria-hidden');
-          }
-          return;
-        }
+    // Send comment → insert with message
+    btnSend?.addEventListener('click', async () => {
+      const message = messageInput?.value.trim() || null;
+      btnSend.disabled = true;
+      if (btnSkip) btnSkip.disabled = true;
+      try {
+        await submitResponse('accepted', message);
+        showThanks('accepted', message);
+      } catch {
+        btnSend.disabled = false;
+        if (btnSkip) btnSkip.disabled = false;
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.removeAttribute('aria-hidden'); }
+      }
+    });
 
-        showThanks(response);
-      });
+    // Skip → insert without message
+    btnSkip?.addEventListener('click', async () => {
+      btnSkip.disabled = true;
+      if (btnSend) btnSend.disabled = true;
+      try {
+        await submitResponse('accepted', null);
+        showThanks('accepted');
+      } catch {
+        btnSkip.disabled = false;
+        if (btnSend) btnSend.disabled = false;
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.removeAttribute('aria-hidden'); }
+      }
     });
   })();
 </script>
