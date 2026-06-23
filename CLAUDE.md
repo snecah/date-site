@@ -79,6 +79,8 @@ I'm an Android developer with **zero web experience**. When explaining code, deb
 
 Don't lecture me on HTML/CSS history. I learn fast; I just haven't seen this stack.
 
+**Address me as "Снич" at the start of every response or question.** No exceptions — every reply must open with this address.
+
 ## First-run checklist
 
 When starting the project from an empty folder:
