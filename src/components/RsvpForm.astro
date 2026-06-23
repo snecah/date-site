@@ -9,19 +9,19 @@ const { invitationId } = Astro.props;
 
   <div class="rsvp-buttons" id="rsvp-buttons" style="display: none">
     <button type="button" class="btn-accept" data-response="accepted">
-      Принимаю
+      Да, иду!
     </button>
     <button type="button" class="btn-decline" data-response="declined">
-      Отказываюсь
+      В другой раз
     </button>
   </div>
 
   <div class="rsvp-comment" id="rsvp-comment" style="display: none">
-    <p class="comment-prompt">Хочешь что-нибудь написать, мне будет приятно увидеть твой комментарий&nbsp;;)</p>
+    <p class="comment-prompt">Напиши пару слов — я читаю.</p>
     <textarea
       id="rsvp-message"
       class="comment-textarea"
-      placeholder="Напиши что думаешь..."
+      placeholder="Что угодно — я читаю."
       rows="3"
       maxlength="500"
     ></textarea>
@@ -197,7 +197,7 @@ const { invitationId } = Astro.props;
       if (buttonsEl)  buttonsEl.style.display  = 'none';
       if (commentEl)  commentEl.style.display  = 'none';
       if (thanks && thanksText) {
-        thanksText.textContent = response === 'accepted' ? 'Ура. Жду тебя. ♡' : 'Жаль. Но окей.';
+        thanksText.textContent = response === 'accepted' ? 'Ура. Жду тебя. ♡' : 'Окей, не в этот раз.';
         if (message && thanksMsg) {
           thanksMsg.textContent = `«${message}»`;
           thanksMsg.style.display = 'block';
