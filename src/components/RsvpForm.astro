@@ -17,11 +17,10 @@ const { invitationId } = Astro.props;
   </div>
 
   <div class="rsvp-comment" id="rsvp-comment" style="display: none">
-    <p class="comment-prompt">Напиши пару слов — я читаю.</p>
+    <p class="comment-prompt" id="comment-prompt-text"></p>
     <textarea
       id="rsvp-message"
       class="comment-textarea"
-      placeholder="Что угодно — я читаю."
       rows="3"
       maxlength="500"
     ></textarea>
@@ -233,45 +232,66 @@ const { invitationId } = Astro.props;
     // No existing response — show buttons
     if (buttonsEl) buttonsEl.style.display = 'flex';
 
-    // Accept → show comment step
-    const acceptBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="accepted"]');
-    acceptBtn?.addEventListener('click', () => {
+    const promptTextEl = document.getElementById('comment-prompt-text');
+    let pendingResponse: 'accepted' | 'declined' = 'accepted';
+
+    function showCommentStep(response: 'accepted' | 'declined') {
+      pendingResponse = response;
       if (buttonsEl) buttonsEl.style.display = 'none';
+
+      if (promptTextEl) {
+        promptTextEl.textContent = response === 'accepted'
+          ? 'Напиши пару слов — я читаю.'
+          : 'Расскажи, что не подошло — или чего бы ты хотела вместо этого?';
+      }
+
+      if (messageInput) {
+        messageInput.placeholder = response === 'accepted'
+          ? 'Что угодно — я читаю.'
+          : 'Пиши честно, мне важно знать.';
+        messageInput.value = '';
+      }
+
+      // For decline: hide skip, disable send until text entered
+      if (btnSkip) btnSkip.style.display = response === 'declined' ? 'none' : '';
+      if (btnSend) btnSend.disabled = response === 'declined';
+
       if (commentEl) commentEl.style.display = 'block';
       messageInput?.focus();
-    });
+    }
 
-    // Decline → immediate insert + thanks
-    const declineBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="declined"]');
-    declineBtn?.addEventListener('click', async () => {
-      declineBtn.disabled = true;
-      acceptBtn && (acceptBtn.disabled = true);
-      try {
-        await submitResponse('declined', null);
-        showThanks('declined');
-      } catch {
-        declineBtn.disabled = false;
-        acceptBtn && (acceptBtn.disabled = false);
-        if (errorEl) { errorEl.style.display = 'block'; errorEl.removeAttribute('aria-hidden'); }
+    // Enable send button for decline only when text is entered
+    messageInput?.addEventListener('input', () => {
+      if (pendingResponse === 'declined' && btnSend) {
+        btnSend.disabled = !messageInput.value.trim();
       }
     });
+
+    // Accept → show optional comment step
+    const acceptBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="accepted"]');
+    acceptBtn?.addEventListener('click', () => showCommentStep('accepted'));
+
+    // Decline → show mandatory comment step
+    const declineBtn = buttonsEl?.querySelector<HTMLButtonElement>('[data-response="declined"]');
+    declineBtn?.addEventListener('click', () => showCommentStep('declined'));
 
     // Send comment → insert with message
     btnSend?.addEventListener('click', async () => {
       const message = messageInput?.value.trim() || null;
+      if (pendingResponse === 'declined' && !message) return;
       btnSend.disabled = true;
       if (btnSkip) btnSkip.disabled = true;
       try {
-        await submitResponse('accepted', message);
-        showThanks('accepted', message);
+        await submitResponse(pendingResponse, message);
+        showThanks(pendingResponse, pendingResponse === 'accepted' ? message : undefined);
       } catch {
-        btnSend.disabled = false;
+        btnSend.disabled = pendingResponse === 'declined' ? !messageInput?.value.trim() : false;
         if (btnSkip) btnSkip.disabled = false;
         if (errorEl) { errorEl.style.display = 'block'; errorEl.removeAttribute('aria-hidden'); }
       }
     });
 
-    // Skip → insert without message
+    // Skip → insert without message (accepted only)
     btnSkip?.addEventListener('click', async () => {
       btnSkip.disabled = true;
       if (btnSend) btnSend.disabled = true;
