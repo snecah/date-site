@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../components/BaseLayout.astro';
+import invitation from '../content/invitation.json';
+
+const isPulsing = invitation.status === 'open';
 ---
 
 <BaseLayout title="Наш маленький мир">
@@ -8,8 +11,8 @@ import BaseLayout from '../components/BaseLayout.astro';
       <h1 class="hero-title">Наш маленький мир</h1>
       <p class="hero-sub">Места, которые мы открывали вместе.</p>
       <nav class="hero-nav">
-        <a href={`${import.meta.env.BASE_URL}history`} class="btn-primary">Наши свидания</a>
-        <a href={`${import.meta.env.BASE_URL}invitation`} class="btn-ghost">Приглашение</a>
+        <a href={`${import.meta.env.BASE_URL}invitation`} class={`btn-primary${isPulsing ? ' btn-primary--pulse' : ''}`}>Приглашение</a>
+        <a href={`${import.meta.env.BASE_URL}history`} class="btn-ghost">Вспомнить прошлые свидания</a>
       </nav>
     </div>
   </main>
@@ -49,19 +52,18 @@ import BaseLayout from '../components/BaseLayout.astro';
 
   .hero-nav {
     display: flex;
-    gap: var(--space-4);
-    justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: center;
   }
 
   .btn-primary,
   .btn-ghost {
     display: inline-flex;
     align-items: center;
-    padding: var(--space-3) var(--space-8);
+    justify-content: center;
     border-radius: var(--radius-pill);
     font-family: var(--font-body);
-    font-size: var(--text-sm);
     font-weight: 500;
     text-decoration: none;
     min-height: 44px;
@@ -70,12 +72,18 @@ import BaseLayout from '../components/BaseLayout.astro';
   }
 
   .btn-primary {
+    padding: var(--space-4) var(--space-12);
+    font-size: var(--text-base);
     background: var(--color-rose);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(224, 102, 138, 0.35);
+    box-shadow: 0 4px 20px rgba(224, 102, 138, 0.4);
+    width: 100%;
+    max-width: 280px;
   }
 
   .btn-ghost {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-sm);
     background: var(--glass-bg-strong);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -83,8 +91,24 @@ import BaseLayout from '../components/BaseLayout.astro';
     color: var(--color-plum);
   }
 
+  @keyframes pulseInvitation {
+    0%, 100% {
+      box-shadow: 0 4px 20px rgba(224, 102, 138, 0.4);
+    }
+    50% {
+      box-shadow: 0 4px 32px rgba(224, 102, 138, 0.75), 0 0 0 6px rgba(224, 102, 138, 0.12);
+    }
+  }
+
+  .btn-primary--pulse {
+    animation: pulseInvitation 2.4s ease-in-out infinite;
+  }
+
   @media (hover: hover) {
-    .btn-primary:hover,
+    .btn-primary:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 28px rgba(224, 102, 138, 0.55);
+    }
     .btn-ghost:hover {
       transform: scale(1.02);
       box-shadow: var(--glass-shadow);
